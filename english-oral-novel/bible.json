@@ -1,0 +1,45 @@
+{
+  "title": "South Gate",
+  "level": "B1-B2",
+  "setting": "Chengdu. A small office above a coffee shop called South Gate.",
+  "promise": "Each chapter is one real-life situation you can reuse this week.",
+  "characters": [
+    {
+      "name": "Lin",
+      "speaks_like": "Short, clear, local teammate. Not a teacher.",
+      "role": "Product. Chengdu local."
+    },
+    {
+      "name": "Alex",
+      "speaks_like": "Friendly, slow enough to follow, still natural.",
+      "role": "New designer. First week in Chengdu."
+    }
+  ],
+  "outline": [
+    {
+      "id": "01",
+      "title": "The Wrong Order",
+      "use_when": "咖啡店点单、拿错东西、道歉、顺路一起走"
+    },
+    {
+      "id": "02",
+      "title": "What's Good Here",
+      "use_when": "点餐、说喜欢不喜欢、请人推荐"
+    },
+    {
+      "id": "03",
+      "title": "Can We Talk After",
+      "use_when": "会上插话、同意、温和反对、约会后再说"
+    },
+    {
+      "id": "04",
+      "title": "I Think We Missed It",
+      "use_when": "问路、听不懂再问一遍、确认地点"
+    },
+    {
+      "id": "05",
+      "title": "You Free Friday",
+      "use_when": "约周末、给选择、礼貌拒绝或答应"
+    }
+  ]
+}

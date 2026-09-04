@@ -1,0 +1,291 @@
+{
+  "level": "B1-B2",
+  "purpose": "Speak these lines out loud. If you would not say it today, it does not belong here.",
+  "chapters": [
+    {
+      "id": "01",
+      "title": "The Wrong Order",
+      "minutes": 6,
+      "scene": "South Gate Coffee, Chengdu, Monday 8:47 a.m.",
+      "functions": [
+        "ordering coffee",
+        "apologizing",
+        "small talk",
+        "walking together",
+        "making a simple plan"
+      ],
+      "story": [
+        {
+          "type": "narration",
+          "speaker": "",
+          "text": "Monday. Lin is late. The coffee shop is packed."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Hi. One oat latte to go, please."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Barista",
+          "text": "Name for the order?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Lin. L-I-N."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Barista",
+          "text": "Got it."
+        },
+        {
+          "type": "narration",
+          "speaker": "",
+          "text": "She checks her phone. Standup is in ten minutes."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Oh no."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Long line, right?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Yeah. I usually come earlier."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Same. First week here. I keep getting the time wrong."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Barista",
+          "text": "Oat latte for Lin?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Thanks."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Wait. Sorry. I think that's mine."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "This one?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Yeah. I ordered an oat latte too. Name's Alex."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Oh. My bad. Here you go."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "No worries. Easy mix-up."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Barista",
+          "text": "And an oat latte for Alex. Two of them."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Then this one is mine."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Perfect."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Are you heading to the office too?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "South Gate? Third floor? Yeah. I start today."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "You're the new designer. I'm Lin. Product."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Nice to meet you, Lin."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Nice to meet you too. We can walk together, if you want."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "That'd be great. I still get lost."
+        },
+        {
+          "type": "narration",
+          "speaker": "",
+          "text": "They step outside. A scooter goes by."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "How do you like Chengdu so far?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I like it. It's warm. And the food is a lot."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "In a good way?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "In a very good way. I just don't know what to order."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "I can show you a place at lunch. If you're free."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I'm free. I'd like that."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Cool. We should move. Standup is at nine."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "After you."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "If you need anything today, just ask."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I will. Thanks for not stealing my coffee."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Hey. I only borrowed it."
+        }
+      ],
+      "phrases": [
+        {
+          "en": "One oat latte to go, please.",
+          "zh": "外带燕麦拿铁，麻烦了。"
+        },
+        {
+          "en": "I think that's mine.",
+          "zh": "这个应该是我的。"
+        },
+        {
+          "en": "My bad. Here you go.",
+          "zh": "我的错，给你。"
+        },
+        {
+          "en": "No worries. Easy mix-up.",
+          "zh": "没事，很容易拿错。"
+        },
+        {
+          "en": "Are you heading to the office too?",
+          "zh": "你也去公司吗？"
+        },
+        {
+          "en": "We can walk together, if you want.",
+          "zh": "要是你愿意，我们一起走。"
+        },
+        {
+          "en": "That'd be great. I still get lost.",
+          "zh": "太好了，我还是会迷路。"
+        },
+        {
+          "en": "I can show you a place at lunch.",
+          "zh": "中午我可以带你去一个地方。"
+        },
+        {
+          "en": "If you're free.",
+          "zh": "你要是有空的话。"
+        },
+        {
+          "en": "If you need anything today, just ask.",
+          "zh": "今天需要什么，直接问我就行。"
+        }
+      ],
+      "role_play": [
+        "You are Lin. You just picked up the wrong coffee.",
+        "1. Say it is not yours and give it back.",
+        "2. Check if they are going to the same office.",
+        "3. Offer to walk together.",
+        "4. Invite them to lunch, but keep it light.",
+        "Then switch. You are Alex, first week in town.",
+        "1. Apologize for the mix-up.",
+        "2. Say you still get lost.",
+        "3. Accept the lunch invite."
+      ],
+      "notes": [
+        {
+          "en": "to go",
+          "zh": "外带。for here 才是堂食。"
+        },
+        {
+          "en": "My bad.",
+          "zh": "熟人/轻松场合认错。正式场合用 Sorry about that."
+        },
+        {
+          "en": "I think that's mine.",
+          "zh": "比 That's mine 客气，适合对陌生人。"
+        },
+        {
+          "en": "if you want / if you're free",
+          "zh": "把邀请变软，对方好拒绝。"
+        },
+        {
+          "en": "That'd be great.",
+          "zh": "答应邀请的短口块，比 Yes, I would 自然。"
+        },
+        {
+          "en": "just ask",
+          "zh": "收尾用，表示你可以来找我。"
+        }
+      ],
+      "source": "01-the-wrong-order.md"
+    }
+  ]
+}
