@@ -286,6 +286,315 @@
         }
       ],
       "source": "01-the-wrong-order.md"
+    },
+    {
+      "id": "02",
+      "title": "What's Good Here",
+      "minutes": 6,
+      "scene": "A small lunch place near the office, Monday 12:10 p.m.",
+      "functions": [
+        "asking for help",
+        "talking spice",
+        "ordering food",
+        "sharing",
+        "paying"
+      ],
+      "story": [
+        {
+          "type": "narration",
+          "speaker": "",
+          "text": "Lunch. They sit down at a small place nearby."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Two?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Yeah. This table is fine."
+        },
+        {
+          "type": "narration",
+          "speaker": "",
+          "text": "The waiter puts down two menus."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I can't read this. Can you help me?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Sure. You like spicy food?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "A little. Not too spicy."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Okay. No super spicy. Got it."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Ready to order?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Almost. What's good here?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Mapo tofu. And the garlic pork."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Is the tofu very spicy?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Medium. We can make it mild."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Mild, please. I still want to taste it."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Let's get that. And the garlic pork."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Can we share?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Yeah. Sharing is easier."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Rice?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Two bowls, please."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Anything to drink?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Just water for me."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Same. Thanks."
+        },
+        {
+          "type": "narration",
+          "speaker": "",
+          "text": "The food comes fast."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "This smells so good."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Try the tofu first. It's not too hot."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Oh. It's warm, but I like it."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "See? You can eat this."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "What's this green stuff?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Cilantro. Move it if you want."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I'm okay. How do I say it's too spicy?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Just say \"too spicy, please.\" That's enough."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Got it. This pork is really good."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "I know, right?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I might come back tomorrow."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "We can. It's close."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "All good?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Yes. Can we get the bill?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Waiter",
+          "text": "Together or separate?"
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "I can get it. You showed me the place."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Lin",
+          "text": "Next time is on me."
+        },
+        {
+          "type": "dialogue",
+          "speaker": "Alex",
+          "text": "Deal."
+        }
+      ],
+      "phrases": [
+        {
+          "en": "I can't read this. Can you help me?",
+          "zh": "这个我看不懂，能帮我吗？"
+        },
+        {
+          "en": "A little. Not too spicy.",
+          "zh": "一点点辣就行，不要太辣。"
+        },
+        {
+          "en": "What's good here?",
+          "zh": "这儿有什么好吃的？"
+        },
+        {
+          "en": "Is it very spicy?",
+          "zh": "这个很辣吗？"
+        },
+        {
+          "en": "Can we make it mild?",
+          "zh": "可以做成微辣吗？"
+        },
+        {
+          "en": "Can we share?",
+          "zh": "可以一起分着吃吗？"
+        },
+        {
+          "en": "Just water for me.",
+          "zh": "我喝水就行。"
+        },
+        {
+          "en": "This is really good.",
+          "zh": "这个真的好吃。"
+        },
+        {
+          "en": "Can we get the bill?",
+          "zh": "买单。"
+        },
+        {
+          "en": "Together or separate?",
+          "zh": "一起付还是分开付？"
+        },
+        {
+          "en": "Next time is on me.",
+          "zh": "下次我请。"
+        }
+      ],
+      "role_play": [
+        "You are Alex. You cannot read the menu.",
+        "1. Ask for help.",
+        "2. Say you only want a little spice.",
+        "3. Ask if a dish is too spicy.",
+        "4. Ask to share.",
+        "Then switch. You are Lin.",
+        "1. Ask what's good here.",
+        "2. Order two dishes and rice.",
+        "3. Ask for the bill.",
+        "4. Say next time is on you."
+      ],
+      "notes": [
+        {
+          "en": "What's good here?",
+          "zh": "请人推荐，比 What's your favorite 更常用。"
+        },
+        {
+          "en": "mild",
+          "zh": "微辣。not too spicy 是先把底线说清。"
+        },
+        {
+          "en": "Can we share?",
+          "zh": "两人点菜时很实用，避免各点一份太多。"
+        },
+        {
+          "en": "Just water for me.",
+          "zh": "拒饮料的短句。Same 可以接在后面。"
+        },
+        {
+          "en": "Can we get the bill?",
+          "zh": "比 Check, please 更口语。Check 也听得懂。"
+        },
+        {
+          "en": "Together or separate?",
+          "zh": "服务员常用。不会说就回 Together, please."
+        },
+        {
+          "en": "Next time is on me.",
+          "zh": "这次对方请，你记下一次。on me = 我请客。"
+        }
+      ],
+      "source": "02-whats-good-here.md"
     }
   ]
 }

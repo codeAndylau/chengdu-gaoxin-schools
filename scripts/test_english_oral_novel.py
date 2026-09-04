@@ -68,15 +68,19 @@ class ParseChapterTest(unittest.TestCase):
 
 
 class RealChapterTest(unittest.TestCase):
-    def test_chapter_01_is_speakable(self):
-        path = Path(__file__).resolve().parents[1] / "english-oral-novel" / "chapters" / "01-the-wrong-order.md"
-        chapter = parse_chapter(path.read_text(encoding="utf-8"))
-        issues = speakability_issues(chapter)
-        self.assertEqual(issues, [])
-        dialogue = [line for line in chapter["story"] if line["type"] == "dialogue"]
-        self.assertGreaterEqual(len(dialogue) / max(len(chapter["story"]), 1), 0.75)
-        self.assertGreaterEqual(len(chapter["phrases"]), 8)
-        self.assertLessEqual(len(chapter["phrases"]), 12)
+    def test_all_chapters_are_speakable(self):
+        paths = sorted(
+            (Path(__file__).resolve().parents[1] / "english-oral-novel" / "chapters").glob("*.md")
+        )
+        self.assertGreaterEqual(len(paths), 2)
+        for path in paths:
+            with self.subTest(path.name):
+                chapter = parse_chapter(path.read_text(encoding="utf-8"))
+                self.assertEqual(speakability_issues(chapter), [])
+                dialogue = [line for line in chapter["story"] if line["type"] == "dialogue"]
+                self.assertGreaterEqual(len(dialogue) / max(len(chapter["story"]), 1), 0.75)
+                self.assertGreaterEqual(len(chapter["phrases"]), 8)
+                self.assertLessEqual(len(chapter["phrases"]), 12)
 
 
 if __name__ == "__main__":
