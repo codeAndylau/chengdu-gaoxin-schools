@@ -34,21 +34,11 @@ jobs:
           npm install -g npm@latest
           rm -f package-lock.json
           npm install --no-audit --no-fund
-          # 手动兜底安装原生绑定（npm optional deps bug）
+          # 手动兜底安装 Linux 原生绑定（npm optional deps bug: npm/cli#4828）
           npm install @tailwindcss/oxide-linux-x64-gnu@4.2.1 @rolldown/binding-linux-x64-gnu@1.0.1 --no-save --force --no-audit --no-fund
-          echo "=== tailwindcss oxide linux ==="
-          ls node_modules/@tailwindcss/oxide-linux-x64-gnu/package.json 2>/dev/null && echo "OK" || echo "MISSING"
-          echo "=== rolldown linux ==="
-          ls node_modules/@rolldown/binding-linux-x64-gnu/package.json 2>/dev/null && echo "OK" || echo "MISSING"
 
       - name: Build static site
-        run: |
-          npx vite build --config vite.pages.config.ts > build.log 2>&1 || true
-          mkdir -p out
-          cp build.log out/build.log
-          cat build.log
-        env:
-          NODE_OPTIONS: --stack-trace-limit=100
+        run: npm run build:pages
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
