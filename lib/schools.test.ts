@@ -125,9 +125,9 @@ describe('streetStats', () => {
 describe('current school dataset', () => {
   const allSchools = schoolData as SchoolRecord[];
 
-  it('has 41 campuses within 5 km of Xiangyuehu', () => {
+  it('has 40 campuses within 5 km of Xiangyuehu', () => {
     const nearby = filterSchools(allSchools, { center: DEFAULT_PLACE, radiusKm: 5 });
-    expect(nearby).toHaveLength(41);
+    expect(nearby).toHaveLength(40);
     expect(nearby.every((school) => school.distanceKm <= 5)).toBe(true);
   });
 
@@ -136,6 +136,6 @@ describe('current school dataset', () => {
     expect(stats.map((item) => item.subdistrict)).toEqual([
       '肖家河', '芳草', '石羊', '桂溪', '中和', '合作', '西园',
     ]);
-    expect(stats.reduce((sum, item) => sum + item.total, 0)).toBe(66);
+    expect(stats.reduce((sum, item) => sum + item.total, 0)).toBe(71);
   });
 });

@@ -5,13 +5,13 @@ import { matchPresetPlace, parseLatLngInput, resolvePlace } from './places';
 describe('matchPresetPlace', () => {
   it('matches the Xiangyuehu aliases', () => {
     expect(matchPresetPlace('香月湖')?.label).toBe('桂溪街道香月湖');
-    expect(matchPresetPlace('桂溪街道香月湖')?.lat).toBeCloseTo(30.5578, 3);
+    expect(matchPresetPlace('桂溪街道香月湖')?.lat).toBeCloseTo(30.557414, 3);
   });
 
   it('matches other preset places by exact label', () => {
     expect(matchPresetPlace('环球中心')?.label).toBe('环球中心');
-    expect(matchPresetPlace('大源中央公园')?.lat).toBeCloseTo(30.5491, 3);
-    expect(matchPresetPlace('华阳街道')?.lng).toBeCloseTo(104.0529, 3);
+    expect(matchPresetPlace('大源中央公园')?.lat).toBeCloseTo(30.551556, 3);
+    expect(matchPresetPlace('华阳街道')?.lng).toBeCloseTo(104.050356, 3);
   });
 
   it('ignores surrounding spaces and latin case', () => {

@@ -133,3 +133,18 @@ export function wgs84ToGcj02(lat: number, lng: number): LatLng {
   dLng = (dLng * 180.0) / ((GCJ_A / sqrtMagic) * Math.cos(radLat) * Math.PI);
   return { lat: lat + dLat, lng: lng + dLng };
 }
+
+// GCJ-02 → WGS-84（迭代逼近，精度 < 1cm）。
+// 用于把高德/腾讯公开坐标转回 WGS-84，与学校 OSM 坐标统一口径。
+export function gcj02ToWgs84(lat: number, lng: number): LatLng {
+  if (outOfChina(lat, lng)) return { lat, lng };
+  let wgs = { lat, lng };
+  for (let i = 0; i < 30; i += 1) {
+    const gcj = wgs84ToGcj02(wgs.lat, wgs.lng);
+    wgs = {
+      lat: wgs.lat - (gcj.lat - lat),
+      lng: wgs.lng - (gcj.lng - lng),
+    };
+  }
+  return wgs;
+}

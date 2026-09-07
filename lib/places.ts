@@ -11,15 +11,17 @@ export type ResolvePlaceResult =
   | { ok: true; place: Place }
   | { ok: false; message: string };
 
-// 常用预设地点（成都高新区及周边）。坐标为参考定位，渲染时会自动转换为 GCJ-02 与高德瓦片对齐。
+// 常用预设地点（成都高新区及周边）。
+// 坐标来源：高德地图公开 POI（GCJ-02），已逆转为 WGS-84 与学校 OSM 坐标统一口径，
+// 渲染时再经 wgs84ToGcj02 转回 GCJ-02 与高德瓦片对齐。
 export const PRESET_PLACES: Place[] = [
-  { label: '桂溪街道香月湖', lat: 30.5578, lng: 104.066, source: 'preset' },
-  { label: '大源中央公园', lat: 30.5491, lng: 104.0492, source: 'preset' },
-  { label: '环球中心', lat: 30.5687, lng: 104.0634, source: 'preset' },
-  { label: '金融城', lat: 30.5824, lng: 104.066, source: 'preset' },
-  { label: '世纪城', lat: 30.5549, lng: 104.0689, source: 'preset' },
-  { label: '中和街道', lat: 30.5585, lng: 104.0927, source: 'preset' },
-  { label: '华阳街道', lat: 30.5076, lng: 104.0529, source: 'preset' },
+  { label: '桂溪街道香月湖', lat: 30.557414, lng: 104.056810, source: 'preset' },
+  { label: '大源中央公园', lat: 30.551556, lng: 104.046723, source: 'preset' },
+  { label: '环球中心', lat: 30.571207, lng: 104.060908, source: 'preset' },
+  { label: '金融城', lat: 30.584824, lng: 104.063506, source: 'preset' },
+  { label: '世纪城', lat: 30.558582, lng: 104.074137, source: 'preset' },
+  { label: '中和街道', lat: 30.560969, lng: 104.090145, source: 'preset' },
+  { label: '华阳街道', lat: 30.510248, lng: 104.050356, source: 'preset' },
 ];
 
 export const DEFAULT_PLACE: Place = PRESET_PLACES[0]!;
