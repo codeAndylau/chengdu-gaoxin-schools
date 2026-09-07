@@ -34,9 +34,18 @@ jobs:
         run: npm ci
 
       - name: Build static site
-        run: npx vite build --config vite.pages.config.ts
+        run: |
+          set -o pipefail
+          npx vite build --config vite.pages.config.ts 2>&1 | tee build.log
         env:
           NODE_OPTIONS: --stack-trace-limit=100
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
