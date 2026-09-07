@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   ArrowUpRight,
   Building2,
+  Check,
   CheckCircle2,
   ChevronRight,
   CircleHelp,
+  Copy,
   GraduationCap,
   Map,
   MapPin,
@@ -20,24 +22,55 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import schoolData from '@/data/schools.json';
-
-type Stage = '小学' | '初中';
-type SchoolRecord = {
-  id: string;
-  name: string;
-  stages: Stage[];
-  nature: '公办' | '民办';
-  area: string;
-  address: string;
-  phone?: string;
-  sourceType: string;
-  note?: string;
-  coordinateStatus: string;
-  lat: number;
-  lng: number;
-};
+import { formatDistanceKm } from '@/lib/geo';
+import { DEFAULT_PLACE, PRESET_PLACES, RADIUS_OPTIONS, nominatimGeocode, resolvePlace, resolvePlaceFromUrlParam, type Place } from '@/lib/places';
+import {
+  filterSchools,
+  isApproximateCoordinate,
+  referenceBoundaries,
+  streetStats,
+  type SchoolRecord,
+  type Stage,
+  type Zone,
+} from '@/lib/schools';
+import type { SchoolMapViewProps } from '@/lib/map-view';
 
 const schools = schoolData as SchoolRecord[];
+
+// 从 URL 参数读取中心点（支持 ?place=预设地点名 或 ?center=纬度,经度）
+function readPlaceFromUrl(): Place {
+  if (typeof window === 'undefined') return DEFAULT_PLACE;
+  const params = new URLSearchParams(window.location.search);
+  const placeParam = params.get('place') ?? params.get('center');
+  if (placeParam) {
+    const resolved = resolvePlaceFromUrlParam(placeParam);
+    if (resolved) return resolved;
+  }
+  return DEFAULT_PLACE;
+}
+
+function readPlaceInputFromUrl(): string {
+  if (typeof window === 'undefined') return DEFAULT_PLACE.label;
+  const params = new URLSearchParams(window.location.search);
+  const placeParam = params.get('place') ?? params.get('center');
+  if (placeParam) {
+    const resolved = resolvePlaceFromUrlParam(placeParam);
+    if (resolved) return resolved.source === 'preset' ? resolved.label : placeParam;
+  }
+  return DEFAULT_PLACE.label;
+}
+
+function readRadiusFromUrl(): number | null {
+  if (typeof window === 'undefined') return 5;
+  const params = new URLSearchParams(window.location.search);
+  const radiusParam = params.get('radius');
+  if (radiusParam) {
+    const r = Number(radiusParam);
+    if (Number.isFinite(r) && r > 0) return r;
+    if (radiusParam === '不限' || radiusParam === 'all') return null;
+  }
+  return 5;
+}
 
 const sources = [
   {
@@ -73,39 +106,103 @@ const stageStyles: Record<string, string> = {
   一贯制: '#7a5aa6',
 };
 
-const projectPoint = (school: SchoolRecord, index: number) => {
-  const x = 42 + ((school.lng - 103.84) / 0.34) * 816;
-  const y = 36 + ((30.84 - school.lat) / 0.38) * 476;
-  const jitter = ((index * 17) % 7) - 3;
-  return { x: x + jitter, y: y + (((index * 11) % 7) - 3) };
-};
-
-const getMarkerColor = (school: SchoolRecord) => {
-  if (school.nature === '民办') return '#ba5b31';
-  if (school.stages.length === 2) return stageStyles.一贯制;
-  return stageStyles[school.stages[0]];
-};
-
-export default function Home() {
+export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolMapViewProps> } = {}) {
   const [query, setQuery] = useState('');
+  const [placeInput, setPlaceInput] = useState(() => readPlaceInputFromUrl());
+  const [place, setPlace] = useState<Place>(() => readPlaceFromUrl());
+  const [placeError, setPlaceError] = useState<string | null>(null);
+  const [placeLoading, setPlaceLoading] = useState(false);
+  const [radiusKm, setRadiusKm] = useState<number | null>(() => readRadiusFromUrl());
   const [stage, setStage] = useState<'全部' | Stage>('全部');
   const [nature, setNature] = useState<'全部' | '公办' | '民办'>('全部');
-  const [zone, setZone] = useState<'全部' | '高新南区' | '高新西区'>('全部');
-  const [selectedId, setSelectedId] = useState('p17');
+  const [zone, setZone] = useState<'全部' | Zone>('全部');
+  const [subdistrict, setSubdistrict] = useState('全部');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [MapComponent, setMapComponent] = useState<ComponentType<SchoolMapViewProps> | null>(
+    () => injectedMap ?? null,
+  );
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return schools.filter((school) => {
-      const haystack = `${school.name}${school.address}${school.area}`.toLowerCase();
-      return (!normalized || haystack.includes(normalized))
-        && (stage === '全部' || school.stages.includes(stage))
-        && (nature === '全部' || school.nature === nature)
-        && (zone === '全部' || school.area.startsWith(zone));
-    });
-  }, [nature, query, stage, zone]);
+  useEffect(() => {
+    if (injectedMap) return;
+    let cancelled = false;
+    void import('./leaflet-school-map')
+      .then((mod) => {
+        if (cancelled) return;
+        if (!mod.default) throw new Error('地图组件未能加载');
+        setMapComponent(() => mod.default);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setMapError(error instanceof Error ? error.message : '地图加载失败');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [injectedMap]);
+
+  // 中心点或半径变化时，把状态回写到 URL（replaceState 不刷新页面）
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (place.source === 'preset') {
+      params.set('place', place.label);
+    } else {
+      params.set('center', `${place.lat.toFixed(6)},${place.lng.toFixed(6)}`);
+    }
+    params.set('radius', radiusKm == null ? '不限' : String(radiusKm));
+    const newSearch = `?${params.toString()}`;
+    if (window.location.search !== newSearch) {
+      window.history.replaceState(null, '', newSearch);
+    }
+  }, [place, radiusKm]);
+
+  const boundaries = useMemo(() => referenceBoundaries(schools), []);
+  const streets = useMemo(() => streetStats(schools), []);
+
+  const filtered = useMemo(() => filterSchools(schools, {
+    query,
+    stage,
+    nature,
+    zone,
+    subdistrict,
+    center: place,
+    radiusKm,
+  }), [nature, place, query, radiusKm, stage, subdistrict, zone]);
 
   const selected = filtered.find((school) => school.id === selectedId) ?? filtered[0];
   const exactCount = schools.filter((school) => school.coordinateStatus.startsWith('OpenStreetMap校名')).length;
+  const hasApproximateDistance = filtered.some((school) => isApproximateCoordinate(school.coordinateStatus));
+
+  async function handlePlaceSearch(event?: { preventDefault(): void }) {
+    event?.preventDefault();
+    setPlaceLoading(true);
+    setPlaceError(null);
+    try {
+      const result = await resolvePlace(placeInput, nominatimGeocode);
+      if (result.ok) {
+        setPlace(result.place);
+        setPlaceInput(result.place.label === DEFAULT_PLACE.label ? DEFAULT_PLACE.label : placeInput.trim());
+      } else {
+        setPlaceError(result.message);
+      }
+    } catch {
+      setPlaceError('地点解析暂时不可用，已保留当前中心点。');
+    } finally {
+      setPlaceLoading(false);
+    }
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      // 剪贴板不可用时静默失败
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -135,10 +232,10 @@ export default function Home() {
               <span className="text-xs text-muted-foreground">按实际校区统计</span>
             </div>
             <h2 className="max-w-3xl font-heading text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-              找学校，看分布，核对招生口径
+              按位置找学校，按街道看分布
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              汇总高新区小学、初中和一贯制学校。地图点位用于快速判断资源密度，具体入学资格与划片结果请以教育部门当年公告为准。
+              默认以桂溪街道香月湖为中心查看 5 公里范围。地图用于观察资源密度，边界和距离均为便民参考，入学资格与划片请以教育部门当年公告为准。
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -158,6 +255,50 @@ export default function Home() {
         </div>
 
         <div className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <form className="mb-3 grid gap-3 lg:grid-cols-[minmax(260px,1.2fr)_auto_auto]" onSubmit={handlePlaceSearch}>
+            <label htmlFor="place-search" className="relative block">
+              <span className="sr-only">搜索地点作为查询中心</span>
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="place-search"
+                list="preset-places"
+                value={placeInput}
+                onChange={(event) => setPlaceInput(event.target.value)}
+                className="h-10 rounded-xl border-0 bg-muted pl-9 shadow-none focus-visible:ring-primary/25"
+                placeholder="输入地点或经纬度（纬度,经度），例：桂溪街道香月湖"
+              />
+              <datalist id="preset-places" aria-label="常用地点快捷选择">
+                {PRESET_PLACES.map((place) => (
+                  <option key={place.label} value={place.label}>{place.label}</option>
+                ))}
+              </datalist>
+            </label>
+            <Button type="submit" className="h-10 rounded-xl" disabled={placeLoading}>
+              {placeLoading ? '解析中' : '查询周边'}
+            </Button>
+            <SegmentedFilter
+              label="半径"
+              value={radiusKm == null ? '不限' : `${radiusKm}公里`}
+              values={[...RADIUS_OPTIONS.map((item) => `${item}公里`), '不限']}
+              onChange={(value) => setRadiusKm(value === '不限' ? null : Number(value.replace('公里', '')))}
+            />
+          </form>
+          {placeError ? <p className="mb-3 text-xs text-[#9a4524]">{placeError}</p> : (
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                当前中心：{place.label} · 直线距离{radiusKm == null ? '不限半径' : `${radiusKm} 公里`}
+              </p>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                title="复制当前位置链接，可直接粘贴到浏览器打开"
+              >
+                {linkCopied ? <Check className="size-3 text-green-600" /> : <Copy className="size-3" />}
+                {linkCopied ? '已复制' : '复制链接'}
+              </button>
+            </div>
+          )}
           <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto_auto]">
             <label htmlFor="school-search" className="relative block">
               <span className="sr-only">搜索学校、地址或片区</span>
@@ -176,9 +317,34 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {streets.map((item) => {
+            const active = subdistrict === item.subdistrict;
+            return (
+              <button
+                key={item.subdistrict}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setSubdistrict(active ? '全部' : item.subdistrict)}
+                className={`rounded-2xl border px-3 py-3 text-left shadow-sm transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card hover:border-primary/40'}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <strong className="text-sm">{item.subdistrict}</strong>
+                  <span className={`text-[11px] ${active ? 'text-white/70' : 'text-muted-foreground'}`}>{item.zone.replace('高新', '')}</span>
+                </div>
+                <p className={`mt-2 text-lg font-bold tabular-nums ${active ? 'text-white' : 'text-primary'}`}>{item.total}</p>
+                <p className={`mt-1 text-[11px] leading-4 ${active ? 'text-white/75' : 'text-muted-foreground'}`}>
+                  小学 {item.primary} · 初中 {item.middle} · 公办 {item.public} · 民办 {item.private}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mb-4 text-[11px] text-muted-foreground">街道/片区统计基于当前学校数据口径，不是官方行政区划或学区统计。</p>
+
         <div className="grid min-h-[680px] gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(370px,.75fr)]">
           <section className="relative overflow-hidden rounded-2xl border border-border bg-[#e8eee9] shadow-sm" aria-label="学校分布地图">
-            <div className="absolute left-4 top-4 z-10 rounded-xl border border-white/70 bg-white/90 px-3 py-2 shadow-sm backdrop-blur">
+            <div className="absolute left-4 top-4 z-[1000] rounded-xl border border-white/70 bg-white/90 px-3 py-2 shadow-sm backdrop-blur">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <MapPin className="size-4 text-primary" />
                 空间分布
@@ -186,66 +352,40 @@ export default function Home() {
               <p className="mt-0.5 text-[11px] text-muted-foreground">当前显示 {filtered.length} 个校区</p>
             </div>
 
-            <svg className="h-[540px] w-full xl:h-full" viewBox="0 0 900 560" aria-labelledby="school-map-title">
-              <title id="school-map-title">成都高新区学校点位分布图</title>
-              <defs>
-                <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
-                  <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#91a49a" strokeOpacity=".12" strokeWidth="1" />
-                </pattern>
-                <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#15372e" floodOpacity=".18" />
-                </filter>
-              </defs>
-              <rect width="900" height="560" fill="url(#grid)" />
-              <path d="M66 57 C121 30 251 36 319 84 C346 119 335 187 295 219 C215 250 104 222 66 175 C43 139 43 87 66 57Z" fill="#d9e7dd" stroke="#8eb09f" strokeDasharray="5 6" />
-              <path d="M408 252 C480 211 667 206 794 250 C862 285 870 402 812 483 C716 530 511 529 429 469 C381 416 366 313 408 252Z" fill="#dfe9e2" stroke="#8eb09f" strokeDasharray="5 6" />
-              <path d="M455 318 C534 275 691 276 795 320" fill="none" stroke="#fff" strokeOpacity=".75" strokeWidth="7" />
-              <path d="M517 242 C498 310 499 401 542 505" fill="none" stroke="#fff" strokeOpacity=".65" strokeWidth="5" />
-              <path d="M83 133 C151 105 240 103 313 130" fill="none" stroke="#fff" strokeOpacity=".7" strokeWidth="5" />
-              <text x="76" y="78" fill="#48665a" fontSize="14" fontWeight="700">高新西区</text>
-              <text x="424" y="276" fill="#48665a" fontSize="14" fontWeight="700">高新南区</text>
-              <text x="448" y="460" fill="#688077" fontSize="11">中和片区</text>
-              <text x="702" y="428" fill="#688077" fontSize="11">桂溪 / 石羊片区</text>
-              {filtered.map((school, index) => {
-                const point = projectPoint(school, index);
-                const active = selected?.id === school.id;
-                return (
-                  <a
-                    key={school.id}
-                    href={`#school-${school.id}`}
-                    aria-label={`${school.name}，${school.stages.join('、')}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setSelectedId(school.id);
-                    }}
-                    className="cursor-pointer outline-none"
-                  >
-                    <circle cx={point.x} cy={point.y} r={active ? 13 : 10} fill="white" fillOpacity={active ? 1 : .88} stroke={getMarkerColor(school)} strokeWidth={active ? 4 : 2.5} filter="url(#shadow)" />
-                    {school.stages.length === 2 ? (
-                      <circle cx={point.x} cy={point.y} r="3.2" fill={getMarkerColor(school)} />
-                    ) : (
-                      <text x={point.x} y={point.y + 3.5} textAnchor="middle" fill={getMarkerColor(school)} fontSize="9" fontWeight="800">
-                        {school.stages[0] === '小学' ? '小' : '初'}
-                      </text>
-                    )}
-                  </a>
-                );
-              })}
-              {filtered.length === 0 && (
-                <g>
-                  <rect x="300" y="240" width="300" height="88" rx="18" fill="white" fillOpacity=".92" />
-                  <text x="450" y="275" textAnchor="middle" fill="#18342e" fontSize="16" fontWeight="700">没有匹配的学校</text>
-                  <text x="450" y="300" textAnchor="middle" fill="#6a7d75" fontSize="12">请减少筛选条件或更换关键词</text>
-                </g>
+            <div className="h-[540px] w-full xl:min-h-[640px] xl:h-[min(72vh,760px)]">
+              {MapComponent ? (
+                <MapComponent
+                  schools={filtered}
+                  selectedId={selected?.id}
+                  onSelect={setSelectedId}
+                  center={place}
+                  radiusKm={radiusKm}
+                  boundaries={boundaries}
+                  highlightedStreet={subdistrict}
+                />
+              ) : (
+                <div className="grid h-full place-items-center px-6 text-center text-sm text-muted-foreground">
+                  {mapError ?? '正在加载地图'}
+                </div>
               )}
-            </svg>
+            </div>
 
-            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/70 bg-white/90 px-3 py-2 text-[11px] shadow-sm backdrop-blur">
+            {filtered.length === 0 && (
+              <div className="pointer-events-none absolute inset-0 z-[900] grid place-items-center bg-[#e8eee9]/35 p-6">
+                <div className="rounded-2xl bg-white/95 px-6 py-5 text-center shadow-sm">
+                  <p className="font-bold">没有匹配的学校</p>
+                  <p className="mt-1 text-sm text-muted-foreground">可扩大半径、更换中心点或减少筛选条件</p>
+                </div>
+              </div>
+            )}
+
+            <div className="absolute bottom-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/70 bg-white/90 px-3 py-2 text-[11px] shadow-sm backdrop-blur">
               <div className="flex flex-wrap items-center gap-3">
                 <LegendDot color={stageStyles.小学} label="小学" />
                 <LegendDot color={stageStyles.初中} label="初中" />
                 <LegendDot color={stageStyles.一贯制} label="一贯制" />
                 <LegendDot color="#ba5b31" label="民办" />
+                <LegendDot color="#c23b22" label="查询中心" />
               </div>
               <span className="text-muted-foreground">精确校名匹配 {exactCount} / {schools.length}，其余按片区近似</span>
             </div>
@@ -256,10 +396,13 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="size-4 text-primary" />
-                  <h3 className="font-bold">学校列表</h3>
+                  <h3 className="font-bold">周边学校</h3>
                 </div>
                 <span className="text-xs tabular-nums text-muted-foreground">{filtered.length} 个结果</span>
               </div>
+              {hasApproximateDistance && (
+                <p className="mt-2 text-[11px] text-[#815325]">部分距离基于近似点位，仅供参考。</p>
+              )}
             </div>
 
             {selected && (
@@ -282,6 +425,7 @@ export default function Home() {
                   <InfoRow icon={<Phone />} label={selected.phone ?? '公开电话待核验'} />
                   <InfoRow icon={<CircleHelp />} label={selected.sourceType} />
                 </dl>
+                <p className="mt-3 text-sm font-semibold text-primary">直线距离 {formatDistanceKm(selected.distanceKm)}</p>
                 {selected.note && <p className="mt-3 rounded-lg bg-[#fff2df] px-3 py-2 text-xs leading-5 text-[#815325]">{selected.note}</p>}
                 <p className="mt-3 text-[11px] text-muted-foreground">点位：{selected.coordinateStatus}</p>
               </article>
@@ -300,14 +444,16 @@ export default function Home() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{school.name}</span>
-                    <span className={`mt-0.5 block truncate text-xs ${selected?.id === school.id ? 'text-white/70' : 'text-muted-foreground'}`}>{school.area} · {school.stages.join(' / ')}</span>
+                    <span className={`mt-0.5 block truncate text-xs ${selected?.id === school.id ? 'text-white/70' : 'text-muted-foreground'}`}>
+                      {school.area} · {school.stages.join(' / ')} · {formatDistanceKm(school.distanceKm)}
+                    </span>
                   </span>
                   <ChevronRight className={`size-4 shrink-0 ${selected?.id === school.id ? 'text-white/70' : 'text-muted-foreground group-hover:translate-x-0.5'} transition`} />
                 </button>
               ))}
               {filtered.length === 0 && (
                 <div className="grid min-h-44 place-items-center px-6 text-center text-sm text-muted-foreground">
-                  暂无匹配结果。可尝试搜索“中和”“实验”或切换筛选条件。
+                  暂无匹配结果。可尝试扩大半径、更换中心点或切换筛选条件。
                 </div>
               )}
             </div>
@@ -321,9 +467,9 @@ export default function Home() {
               <h3 className="font-bold">怎样理解这份地图</h3>
             </div>
             <div className="grid gap-3 text-sm leading-6 text-muted-foreground sm:grid-cols-2">
-              <p><strong className="text-foreground">小学 51 个校区</strong>包含 45 个 2026 年户籍入学登记点、专项电脑随机录取校区，以及当年可核验民办资源。登记点不等于最终划片结果。</p>
-              <p><strong className="text-foreground">初中 28 个校区</strong>包含区属划片或电脑随机录取学校、九年一贯制初中部、当年市直属招生学校和民办学校。</p>
-              <p><strong className="text-foreground">点位精度分两档</strong>：校名在 OpenStreetMap 匹配到的展示实际点位；未匹配到的按所属片区近似展示，并在详情中标注。</p>
+              <p><strong className="text-foreground">底图来自高德地图</strong>（标准路网瓦片，无需 Key），可缩放和拖拽。高新区南区、西区轮廓由当前校区点位生成参考范围，不是官方行政或学区边界。</p>
+              <p><strong className="text-foreground">距离按直线计算</strong>，默认示例为桂溪街道香月湖周边 5 公里。半径范围不是入学资格范围，也不能替代划片查询。</p>
+              <p><strong className="text-foreground">点位精度分两档</strong>：校名在 OpenStreetMap 匹配到的展示实际点位；未匹配到的按所属片区近似展示，虚线点位表示待核验。</p>
               <p><strong className="text-foreground">不作学区承诺</strong>：学位安排与入学资格会受户籍、实际居住、当年招生计划和电脑随机录取政策影响。</p>
             </div>
           </div>
@@ -344,6 +490,9 @@ export default function Home() {
                 </a>
               ))}
             </div>
+            <p className="mt-4 text-[11px] leading-5 text-muted-foreground">
+              地图底图 © 高德地图（GCJ-02 坐标系，学校 WGS-84 坐标已做转换对齐）。边界为参考范围，生成自 2026-09-02 学校点位。香月湖中心按益州大道中段、环球中心南侧公开地址做参考定位。
+            </p>
           </div>
         </section>
 
