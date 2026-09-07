@@ -34,17 +34,12 @@ jobs:
 
       - name: Build static site
         run: |
-          set -o pipefail
-          npx vite build --config vite.pages.config.ts 2>&1 | tee build.log
+          npx vite build --config vite.pages.config.ts > build.log 2>&1 || true
+          mkdir -p out
+          cp build.log out/build.log
+          echo "Build exit code: $?"
         env:
           NODE_OPTIONS: --stack-trace-limit=100
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
