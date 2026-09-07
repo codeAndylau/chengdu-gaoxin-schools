@@ -34,7 +34,9 @@ jobs:
         run: npm ci
 
       - name: Build static site
-        run: npm run build:pages
+        run: npx vite build --config vite.pages.config.ts
+        env:
+          NODE_OPTIONS: --stack-trace-limit=100
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
