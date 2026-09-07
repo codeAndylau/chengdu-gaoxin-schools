@@ -380,12 +380,23 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
             )}
 
             <div className="absolute bottom-4 left-4 right-4 z-[1000] flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/70 bg-white/90 px-3 py-2 text-[11px] shadow-sm backdrop-blur">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <LegendDot color={stageStyles.小学} label="小学" />
                 <LegendDot color={stageStyles.初中} label="初中" />
                 <LegendDot color={stageStyles.一贯制} label="一贯制" />
                 <LegendDot color="#ba5b31" label="民办" />
-                <LegendDot color="#c23b22" label="查询中心" />
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block h-0.5 w-5 rounded-full bg-[#c23b22]" />
+                  搜索半径
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block h-0.5 w-5 border-t-2 border-dashed border-[#176b5a]" />
+                  南区/西区参考范围
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block size-2.5 rounded-full border-2 border-[#c23b22] bg-white" />
+                  查询中心
+                </span>
               </div>
               <span className="text-muted-foreground">精确校名匹配 {exactCount} / {schools.length}，其余按片区近似</span>
             </div>

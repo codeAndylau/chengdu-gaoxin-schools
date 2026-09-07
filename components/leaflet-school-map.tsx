@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import L from 'leaflet';
-import { Circle, CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { Circle, CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet';
 
 import type { SchoolMapViewProps } from '@/lib/map-view';
 import type { Place } from '@/lib/places';
@@ -167,16 +167,26 @@ export default function LeafletSchoolMap({
           center={[centerGcj.lat, centerGcj.lng]}
           radius={radiusKm * 1000}
           pathOptions={{ color: '#c23b22', weight: 2, fillColor: '#c23b22', fillOpacity: 0.06 }}
-        />
+        >
+          <Tooltip permanent direction="top" offset={[0, -6]} className="radius-tooltip">
+            {`${radiusKm} 公里半径`}
+          </Tooltip>
+        </Circle>
       ) : null}
       {centerGcj ? (
-        <CircleMarker
-          center={[centerGcj.lat, centerGcj.lng]}
-          radius={9}
-          pathOptions={{ color: '#c23b22', weight: 3, fillColor: '#fff', fillOpacity: 1 }}
-        >
-          <Tooltip permanent={false}>{center?.label}</Tooltip>
-        </CircleMarker>
+        <Marker
+          position={[centerGcj.lat, centerGcj.lng]}
+          icon={L.divIcon({
+            className: 'center-marker-wrapper',
+            html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translateY(-8px);">
+              <div style="background:#c23b22;color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.25);margin-bottom:2px;">${center?.label ?? ''}</div>
+              <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid #c23b22;"></div>
+              <div style="width:14px;height:14px;background:#fff;border:3px solid #c23b22;border-radius:50%;margin-top:-1px;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+            </div>`,
+            iconSize: [140, 44],
+            iconAnchor: [70, 44],
+          })}
+        />
       ) : null}
       {schools.map((school) => {
         const active = selectedId === school.id;
