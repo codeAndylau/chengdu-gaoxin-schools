@@ -136,6 +136,6 @@ describe('current school dataset', () => {
     expect(stats.map((item) => item.subdistrict)).toEqual([
       '肖家河', '芳草', '石羊', '桂溪', '中和', '合作', '西园',
     ]);
-    expect(stats.reduce((sum, item) => sum + item.total, 0)).toBe(71);
+    expect(stats.reduce((sum, item) => sum + item.total, 0)).toBe(70);
   });
 });

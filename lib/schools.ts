@@ -131,7 +131,7 @@ export function referenceBoundaries(schools: SchoolRecord[]) {
     const points = schools
       .filter((school) => parseSchoolArea(school.area).subdistrict === item.subdistrict)
       .map((school) => ({ lat: school.lat, lng: school.lng }));
-    const ring = polygonRing(points, 0.008);
+    const ring = polygonRing(points, 0.003);
     if (ring.length < 4) return [];
     return [{
       type: 'Feature' as const,

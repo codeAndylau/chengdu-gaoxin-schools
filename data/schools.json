@@ -127,13 +127,13 @@
       "小学"
     ],
     "nature": "公办",
-    "area": "高新南区·桂溪",
+    "area": "高新南区·石羊",
     "address": "锦尚西二路299号",
     "phone": "028-85193760",
     "sourceType": "2026小学登记点",
-    "coordinateStatus": "OpenStreetMap校名匹配",
-    "lat": 30.665034,
-    "lng": 103.9943055
+    "coordinateStatus": "高德POI(GCJ02转WGS84)",
+    "lat": 30.580136,
+    "lng": 104.051145
   },
   {
     "id": "p10",
@@ -256,21 +256,6 @@
     "coordinateStatus": "OpenStreetMap校名匹配",
     "lat": 30.5502138,
     "lng": 104.0277601
-  },
-  {
-    "id": "p18",
-    "name": "成都高新区锦晖天府小学",
-    "stages": [
-      "小学"
-    ],
-    "nature": "公办",
-    "area": "高新南区·石羊",
-    "address": "祥华路388号",
-    "phone": "028-62714549",
-    "sourceType": "2026小学登记点",
-    "coordinateStatus": "OpenStreetMap校名匹配",
-    "lat": 30.5808445,
-    "lng": 104.0734197
   },
   {
     "id": "p19",
