@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import {
   ArrowUpRight,
   Building2,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   CircleHelp,
   Copy,
@@ -112,6 +113,9 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
   const [place, setPlace] = useState<Place>(() => readPlaceFromUrl());
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [placeLoading, setPlaceLoading] = useState(false);
+  const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
+  const [presetShowAll, setPresetShowAll] = useState(false);
+  const presetDropdownRef = useRef<HTMLDivElement>(null);
   const [radiusKm, setRadiusKm] = useState<number | null>(() => readRadiusFromUrl());
   const [stage, setStage] = useState<'全部' | Stage>('全部');
   const [nature, setNature] = useState<'全部' | '公办' | '民办'>('全部');
@@ -158,8 +162,28 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
     }
   }, [place, radiusKm]);
 
+  // 点击预设地点下拉框外部时关闭
+  useEffect(() => {
+    if (!presetDropdownOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (presetDropdownRef.current && !presetDropdownRef.current.contains(event.target as Node)) {
+        setPresetDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [presetDropdownOpen]);
+
   const boundaries = useMemo(() => referenceBoundaries(schools), []);
   const streets = useMemo(() => streetStats(schools), []);
+
+  // 预设地点下拉列表：点击箭头展开时显示全部，输入时过滤
+  const visiblePresets = useMemo(() => {
+    if (presetShowAll) return PRESET_PLACES;
+    const q = placeInput.trim().toLowerCase();
+    if (!q) return PRESET_PLACES;
+    return PRESET_PLACES.filter((p) => p.label.toLowerCase().includes(q));
+  }, [placeInput, presetShowAll]);
 
   const filtered = useMemo(() => filterSchools(schools, {
     query,
@@ -256,23 +280,64 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
 
         <div className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
           <form className="mb-3 grid gap-3 lg:grid-cols-[minmax(260px,1.2fr)_auto_auto]" onSubmit={handlePlaceSearch}>
-            <label htmlFor="place-search" className="relative block">
+            <div className="relative block" ref={presetDropdownRef}>
               <span className="sr-only">搜索地点作为查询中心</span>
-              <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="place-search"
-                list="preset-places"
                 value={placeInput}
-                onChange={(event) => setPlaceInput(event.target.value)}
-                className="h-10 rounded-xl border-0 bg-muted pl-9 shadow-none focus-visible:ring-primary/25"
+                onChange={(event) => {
+                  setPlaceInput(event.target.value);
+                  setPresetShowAll(false);
+                  if (!presetDropdownOpen) setPresetDropdownOpen(true);
+                }}
+                onFocus={() => {
+                  setPresetShowAll(false);
+                  setPresetDropdownOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setPresetDropdownOpen(false);
+                }}
+                className="h-10 rounded-xl border-0 bg-muted pl-9 pr-10 shadow-none focus-visible:ring-primary/25"
                 placeholder="输入地点或经纬度（纬度,经度），例：桂溪街道香月湖"
               />
-              <datalist id="preset-places" aria-label="常用地点快捷选择">
-                {PRESET_PLACES.map((place) => (
-                  <option key={place.label} value={place.label}>{place.label}</option>
-                ))}
-              </datalist>
-            </label>
+              <button
+                type="button"
+                aria-label="展开常用地点"
+                onClick={() => {
+                  setPresetShowAll(true);
+                  setPresetDropdownOpen((prev) => !prev);
+                }}
+                className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-background hover:text-foreground"
+              >
+                <ChevronDown className={`size-4 transition-transform ${presetDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {presetDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                  <div className="max-h-56 overflow-y-auto p-1">
+                    {visiblePresets.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">无匹配预设地点，可直接输入经纬度</p>
+                    ) : (
+                      visiblePresets.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setPlaceInput(preset.label);
+                            setPresetDropdownOpen(false);
+                            setPresetShowAll(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-muted"
+                        >
+                          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{preset.label}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <Button type="submit" className="h-10 rounded-xl" disabled={placeLoading}>
               {placeLoading ? '解析中' : '查询周边'}
             </Button>
