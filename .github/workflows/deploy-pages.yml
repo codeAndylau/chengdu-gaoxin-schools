@@ -30,10 +30,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: |
-          rm -f package-lock.json
-          npm install --no-audit --no-fund
-          ls node_modules/@rolldown/ | grep linux || echo "linux binding missing"
+        run: npm ci --no-audit --no-fund
 
       - name: Build static site
         run: npx vite build --config vite.pages.config.ts
