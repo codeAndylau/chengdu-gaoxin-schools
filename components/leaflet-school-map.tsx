@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo } from 'react';
 import L from 'leaflet';
-import { Circle, CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { Circle, CircleMarker, GeoJSON, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
 
 import type { SchoolMapViewProps } from '@/lib/map-view';
-import type { Place } from '@/lib/places';
+import { PRESET_PLACES, type Place } from '@/lib/places';
 import type { SchoolResult } from '@/lib/schools';
 import { isApproximateCoordinate } from '@/lib/schools';
 import { wgs84ToGcj02 } from '@/lib/geo';
@@ -212,7 +212,41 @@ export default function LeafletSchoolMap({
               {school.name} · {school.stages.join('、')}
               {approximate ? ' · 近似点位' : ''}
             </Tooltip>
+            <Popup>
+              <div style={{ minWidth: 180, fontFamily: 'system-ui, sans-serif' }}>
+                <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>{school.name}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#666' }}>{school.area} · {school.stages.join(' / ')}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#666' }}>{school.address}</p>
+                <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <a href={`https://uri.amap.com/navigation?to=${gcj.lng},${gcj.lat},${encodeURIComponent(school.name)}&mode=car&src=webapp&coordinate=gaode&callnative=1`} target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '4px 10px', background: '#2563eb', color: '#fff', borderRadius: 6, fontSize: 12, textDecoration: 'none' }}>驾车</a>
+                  <a href={`https://uri.amap.com/navigation?to=${gcj.lng},${gcj.lat},${encodeURIComponent(school.name)}&mode=bus&src=webapp&coordinate=gaode&callnative=1`} target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '4px 10px', background: '#f3f4f6', color: '#333', borderRadius: 6, fontSize: 12, textDecoration: 'none' }}>公交</a>
+                  <a href={`https://uri.amap.com/navigation?to=${gcj.lng},${gcj.lat},${encodeURIComponent(school.name)}&mode=walk&src=webapp&coordinate=gaode&callnative=1`} target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '4px 10px', background: '#f3f4f6', color: '#333', borderRadius: 6, fontSize: 12, textDecoration: 'none' }}>步行</a>
+                  <a href={`https://uri.amap.com/navigation?to=${gcj.lng},${gcj.lat},${encodeURIComponent(school.name)}&mode=ride&src=webapp&coordinate=gaode&callnative=1`} target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '4px 10px', background: '#f3f4f6', color: '#333', borderRadius: 6, fontSize: 12, textDecoration: 'none' }}>骑行</a>
+                </div>
+              </div>
+            </Popup>
           </CircleMarker>
+        );
+      })}
+      {/* 周边配套：商圈/地标标注 */}
+      {PRESET_PLACES.filter((p) => !['桂溪街道香月湖', '大源中央公园', '环球中心', '金融城', '世纪城', '中和街道', '华阳街道'].includes(p.label)).map((poi) => {
+        const gcj = toGcj(poi);
+        return (
+          <Marker
+            key={poi.label}
+            position={[gcj.lat, gcj.lng]}
+            icon={L.divIcon({
+              className: '',
+              html: `<div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="background:#f59e0b;color:#fff;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);">${poi.label}</div>
+                <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #f59e0b;"></div>
+              </div>`,
+              iconSize: [80, 24],
+              iconAnchor: [40, 24],
+            })}
+          >
+            <Tooltip>{poi.label}</Tooltip>
+          </Marker>
         );
       })}
       <MapViewport schools={schools} center={center} radiusKm={radiusKm} />

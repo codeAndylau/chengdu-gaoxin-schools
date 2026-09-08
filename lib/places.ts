@@ -15,6 +15,7 @@ export type ResolvePlaceResult =
 // 坐标来源：高德地图公开 POI（GCJ-02），已逆转为 WGS-84 与学校 OSM 坐标统一口径，
 // 渲染时再经 wgs84ToGcj02 转回 GCJ-02 与高德瓦片对齐。
 export const PRESET_PLACES: Place[] = [
+  // 住宅/街道
   { label: '桂溪街道香月湖', lat: 30.557414, lng: 104.056810, source: 'preset' },
   { label: '大源中央公园', lat: 30.551556, lng: 104.046723, source: 'preset' },
   { label: '环球中心', lat: 30.571207, lng: 104.060908, source: 'preset' },
@@ -22,6 +23,15 @@ export const PRESET_PLACES: Place[] = [
   { label: '世纪城', lat: 30.558582, lng: 104.074137, source: 'preset' },
   { label: '中和街道', lat: 30.560969, lng: 104.090145, source: 'preset' },
   { label: '华阳街道', lat: 30.510248, lng: 104.050356, source: 'preset' },
+  // 商圈/地标
+  { label: '世豪广场', lat: 30.552626, lng: 104.042512, source: 'preset' },
+  { label: '伊藤洋华堂(高新店)', lat: 30.553009, lng: 104.041556, source: 'preset' },
+  { label: '成都银泰城', lat: 30.543523, lng: 104.056676, source: 'preset' },
+  { label: '成都SKP', lat: 30.571458, lng: 104.067935, source: 'preset' },
+  { label: '交子公园', lat: 30.574457, lng: 104.064499, source: 'preset' },
+  { label: '铁像寺水街', lat: 30.560119, lng: 104.046683, source: 'preset' },
+  { label: '建发鹭洲里', lat: 30.552375, lng: 104.039232, source: 'preset' },
+  { label: '成都银泰中心', lat: 30.587310, lng: 104.067186, source: 'preset' },
 ];
 
 export const DEFAULT_PLACE: Place = PRESET_PLACES[0]!;

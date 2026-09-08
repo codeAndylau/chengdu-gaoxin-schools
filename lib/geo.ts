@@ -23,6 +23,31 @@ export function formatDistanceKm(distanceKm: number) {
   return `${distanceKm.toFixed(1)} 公里`;
 }
 
+// 基于直线距离估算出行时间（城市道路绕行系数约1.3）
+const WALK_SPEED_KMH = 5;
+const BIKE_SPEED_KMH = 15;
+const DRIVE_SPEED_KMH = 30;
+const ROAD_DETOUR_FACTOR = 1.3;
+
+export function estimateTravelTime(distanceKm: number, mode: 'walk' | 'bike' | 'drive') {
+  const speed = mode === 'walk' ? WALK_SPEED_KMH : mode === 'bike' ? BIKE_SPEED_KMH : DRIVE_SPEED_KMH;
+  const actualDistance = distanceKm * ROAD_DETOUR_FACTOR;
+  const minutes = (actualDistance / speed) * 60;
+  if (minutes < 1) return '不到1分钟';
+  if (minutes < 60) return `${Math.round(minutes)} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  return mins > 0 ? `${hours} 小时 ${mins} 分` : `${hours} 小时`;
+}
+
+export function formatTravelTimes(distanceKm: number) {
+  return {
+    walk: estimateTravelTime(distanceKm, 'walk'),
+    bike: estimateTravelTime(distanceKm, 'bike'),
+    drive: estimateTravelTime(distanceKm, 'drive'),
+  };
+}
+
 function cross(origin: LatLng, a: LatLng, b: LatLng) {
   return (a.lng - origin.lng) * (b.lat - origin.lat) - (a.lat - origin.lat) * (b.lng - origin.lng);
 }

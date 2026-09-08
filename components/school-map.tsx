@@ -4,26 +4,32 @@ import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import {
   ArrowUpRight,
   Building2,
+  Car,
   Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleHelp,
   Copy,
+  Footprints,
   GraduationCap,
+  Heart,
   Map,
   MapPin,
+  Navigation,
   Phone,
+  Scale,
   Search,
   School,
   SlidersHorizontal,
+  Bike,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import schoolData from '@/data/schools.json';
-import { formatDistanceKm } from '@/lib/geo';
+import { formatDistanceKm, formatTravelTimes, wgs84ToGcj02 } from '@/lib/geo';
 import { DEFAULT_PLACE, PRESET_PLACES, RADIUS_OPTIONS, nominatimGeocode, resolvePlace, resolvePlaceFromUrlParam, type Place } from '@/lib/places';
 import {
   filterSchools,
@@ -127,6 +133,37 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
   );
   const [mapError, setMapError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem('gx-school-favorites') ?? '[]'); } catch { return []; }
+  });
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+
+  // 收藏持久化
+  useEffect(() => {
+    localStorage.setItem('gx-school-favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  function toggleFavorite(id: string) {
+    setFavorites((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  function toggleCompare(id: string) {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 3) return prev;
+      return [...prev, id];
+    });
+  }
+
+  // 高德导航URI（无需Key）
+  function openNavigation(school: { lat: number; lng: number; name: string }, mode: 'car' | 'bus' | 'walk' | 'ride') {
+    const gcj = wgs84ToGcj02(school.lat, school.lng);
+    const modeMap = { car: 'car', bus: 'bus', walk: 'walk', ride: 'ride' };
+    const url = `https://uri.amap.com/navigation?to=${gcj.lng},${gcj.lat},${encodeURIComponent(school.name)}&mode=${modeMap[mode]}&src=webapp&coordinate=gaode&callnative=1`;
+    window.open(url, '_blank', 'noopener');
+  }
 
   useEffect(() => {
     if (injectedMap) return;
@@ -183,6 +220,15 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
     const q = placeInput.trim().toLowerCase();
     if (!q) return PRESET_PLACES;
     return PRESET_PLACES.filter((p) => p.label.toLowerCase().includes(q));
+  }, [placeInput, presetShowAll]);
+
+  // 学校名搜索结果（三级搜索之一）
+  const matchedSchools = useMemo(() => {
+    const q = placeInput.trim().toLowerCase();
+    if (!q || presetShowAll) return [];
+    return schools
+      .filter((s) => s.name.toLowerCase().includes(q) || (s.address ?? '').toLowerCase().includes(q))
+      .slice(0, 8);
   }, [placeInput, presetShowAll]);
 
   const filtered = useMemo(() => filterSchools(schools, {
@@ -276,6 +322,20 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
               </div>
             ))}
           </div>
+          {/* 收藏与对比入口 */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCompare(true)}
+              disabled={compareIds.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Scale className="size-3.5" /> 对比 ({compareIds.length}/3)
+            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
+              <Heart className="size-3.5 fill-[#e74c3c] text-[#e74c3c]" /> 已收藏 {favorites.length} 所
+            </span>
+          </div>
         </div>
 
         <div className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
@@ -314,25 +374,54 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
               </button>
               {presetDropdownOpen && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-                  <div className="max-h-56 overflow-y-auto p-1">
-                    {visiblePresets.length === 0 ? (
-                      <p className="px-3 py-2 text-xs text-muted-foreground">无匹配预设地点，可直接输入经纬度</p>
+                  <div className="max-h-72 overflow-y-auto p-1">
+                    {matchedSchools.length === 0 && visiblePresets.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">无匹配结果，可直接输入经纬度（纬度,经度）</p>
                     ) : (
-                      visiblePresets.map((preset) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => {
-                            setPlaceInput(preset.label);
-                            setPresetDropdownOpen(false);
-                            setPresetShowAll(false);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-muted"
-                        >
-                          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{preset.label}</span>
-                        </button>
-                      ))
+                      <>
+                        {matchedSchools.length > 0 && (
+                          <div className="mb-1">
+                            <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">学校</p>
+                            {matchedSchools.map((school) => (
+                              <button
+                                key={`school-${school.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedId(school.id);
+                                  setPlaceInput(school.name);
+                                  setPresetDropdownOpen(false);
+                                  setPresetShowAll(false);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-muted"
+                              >
+                                <School className="size-3.5 shrink-0 text-[#176b5a]" />
+                                <span className="min-w-0 flex-1 truncate">{school.name}</span>
+                                <span className="shrink-0 text-[10px] text-muted-foreground">{school.stages.join('/')}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {visiblePresets.length > 0 && (
+                          <div>
+                            <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">地点/商圈</p>
+                            {visiblePresets.map((preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => {
+                                  setPlaceInput(preset.label);
+                                  setPresetDropdownOpen(false);
+                                  setPresetShowAll(false);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-muted"
+                              >
+                                <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                                <span className="truncate">{preset.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -462,6 +551,10 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
                   <span className="inline-block size-2.5 rounded-full border-2 border-[#c23b22] bg-white" />
                   查询中心
                 </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block rounded bg-[#f59e0b] px-1 text-[9px] font-semibold text-white">商</span>
+                  商圈/地标
+                </span>
               </div>
               <span className="text-muted-foreground">精确校名匹配 {exactCount} / {schools.length}，其余按片区近似</span>
             </div>
@@ -501,7 +594,74 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
                   <InfoRow icon={<Phone />} label={selected.phone ?? '公开电话待核验'} />
                   <InfoRow icon={<CircleHelp />} label={selected.sourceType} />
                 </dl>
-                <p className="mt-3 text-sm font-semibold text-primary">直线距离 {formatDistanceKm(selected.distanceKm)}</p>
+                {/* 距离与出行时间 */}
+                <div className="mt-3 rounded-xl bg-white p-3 shadow-sm">
+                  <p className="text-sm font-semibold text-primary">直线距离 {formatDistanceKm(selected.distanceKm)}</p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                      <Footprints className="mx-auto size-3.5 text-muted-foreground" />
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">步行</p>
+                      <p className="text-xs font-semibold">{formatTravelTimes(selected.distanceKm).walk}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                      <Bike className="mx-auto size-3.5 text-muted-foreground" />
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">骑行</p>
+                      <p className="text-xs font-semibold">{formatTravelTimes(selected.distanceKm).bike}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                      <Car className="mx-auto size-3.5 text-muted-foreground" />
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">驾车</p>
+                      <p className="text-xs font-semibold">{formatTravelTimes(selected.distanceKm).drive}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* 操作按钮 */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openNavigation(selected, 'car')}
+                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90"
+                  >
+                    <Navigation className="size-3" /> 驾车导航
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openNavigation(selected, 'bus')}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition hover:bg-muted"
+                  >
+                    公交
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openNavigation(selected, 'walk')}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition hover:bg-muted"
+                  >
+                    <Footprints className="size-3" /> 步行
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openNavigation(selected, 'ride')}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition hover:bg-muted"
+                  >
+                    <Bike className="size-3" /> 骑行
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(selected.id)}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${favorites.includes(selected.id) ? 'bg-[#fde8e8] text-[#c0392b]' : 'border border-border bg-background hover:bg-muted'}`}
+                  >
+                    <Heart className={`size-3 ${favorites.includes(selected.id) ? 'fill-current' : ''}`} />
+                    {favorites.includes(selected.id) ? '已收藏' : '收藏'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleCompare(selected.id)}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${compareIds.includes(selected.id) ? 'bg-[#e8f0fd] text-[#2563eb]' : 'border border-border bg-background hover:bg-muted'}`}
+                  >
+                    <Scale className="size-3" />
+                    {compareIds.includes(selected.id) ? '已加入对比' : '对比'}
+                  </button>
+                </div>
                 {selected.note && <p className="mt-3 rounded-lg bg-[#fff2df] px-3 py-2 text-xs leading-5 text-[#815325]">{selected.note}</p>}
                 <p className="mt-3 text-[11px] text-muted-foreground">点位：{selected.coordinateStatus}</p>
               </article>
@@ -509,11 +669,10 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
 
             <div className="school-list min-h-[260px] flex-1 overflow-y-auto p-2">
               {filtered.map((school) => (
-                <button
+                <div
                   key={school.id}
-                  type="button"
                   onClick={() => setSelectedId(school.id)}
-                  className={`group mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${selected?.id === school.id ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted'}`}
+                  className={`group mb-1 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition ${selected?.id === school.id ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted'}`}
                 >
                   <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${selected?.id === school.id ? 'bg-white/15' : 'bg-muted text-primary'}`}>
                     {school.stages.length === 2 ? <Building2 className="size-4" /> : school.stages[0] === '小学' ? <School className="size-4" /> : <GraduationCap className="size-4" />}
@@ -524,8 +683,16 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
                       {school.area} · {school.stages.join(' / ')} · {formatDistanceKm(school.distanceKm)}
                     </span>
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(school.id); }}
+                    className={`shrink-0 rounded-md p-1 transition ${favorites.includes(school.id) ? 'text-[#e74c3c]' : selected?.id === school.id ? 'text-white/50 hover:text-white' : 'text-muted-foreground hover:text-foreground'}`}
+                    aria-label={favorites.includes(school.id) ? '取消收藏' : '收藏'}
+                  >
+                    <Heart className={`size-3.5 ${favorites.includes(school.id) ? 'fill-current' : ''}`} />
+                  </button>
                   <ChevronRight className={`size-4 shrink-0 ${selected?.id === school.id ? 'text-white/70' : 'text-muted-foreground group-hover:translate-x-0.5'} transition`} />
-                </button>
+                </div>
               ))}
               {filtered.length === 0 && (
                 <div className="grid min-h-44 place-items-center px-6 text-center text-sm text-muted-foreground">
@@ -535,6 +702,103 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
             </div>
           </aside>
         </div>
+
+        {/* 学校对比面板 */}
+        {showCompare && compareIds.length > 0 && (
+          <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Scale className="size-5 text-primary" />
+                <h3 className="font-bold">学校对比</h3>
+              </div>
+              <button type="button" onClick={() => setShowCompare(false)} className="text-xs text-muted-foreground hover:text-foreground">关闭</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="py-2 pr-4 text-left text-xs font-medium text-muted-foreground">对比项</th>
+                    {compareIds.map((id) => {
+                      const s = schools.find((x) => x.id === id);
+                      if (!s) return null;
+                      return (
+                        <th key={id} className="py-2 px-3 text-left">
+                          <span className="block truncate font-semibold">{s.name}</span>
+                          <button type="button" onClick={() => toggleCompare(id)} className="mt-0.5 text-[10px] text-muted-foreground hover:text-[#c0392b]">移除</button>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr><td className="py-2 pr-4 text-xs text-muted-foreground">性质</td>{compareIds.map((id) => { const s = schools.find((x) => x.id === id); return <td key={id} className="py-2 px-3">{s?.nature}</td>; })}</tr>
+                  <tr><td className="py-2 pr-4 text-xs text-muted-foreground">学段</td>{compareIds.map((id) => { const s = schools.find((x) => x.id === id); return <td key={id} className="py-2 px-3">{s?.stages.join(' / ')}</td>; })}</tr>
+                  <tr><td className="py-2 pr-4 text-xs text-muted-foreground">区域</td>{compareIds.map((id) => { const s = schools.find((x) => x.id === id); return <td key={id} className="py-2 px-3">{s?.area}</td>; })}</tr>
+                  <tr><td className="py-2 pr-4 text-xs text-muted-foreground">地址</td>{compareIds.map((id) => { const s = schools.find((x) => x.id === id); return <td key={id} className="py-2 px-3 text-xs">{s?.address}</td>; })}</tr>
+                  <tr><td className="py-2 pr-4 text-xs text-muted-foreground">距中心</td>{compareIds.map((id) => { const s = filtered.find((x) => x.id === id); return <td key={id} className="py-2 px-3">{s ? formatDistanceKm(s.distanceKm) : '-'}</td>; })}</tr>
+                  <tr><td className="py-2 pr-4 text-xs text-muted-foreground">电话</td>{compareIds.map((id) => { const s = schools.find((x) => x.id === id); return <td key={id} className="py-2 px-3 text-xs">{s?.phone ?? '待核验'}</td>; })}</tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* 入学政策时间线 */}
+        <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <GraduationCap className="size-5 text-primary" />
+            <h3 className="font-bold">成都高新区入学政策时间线（参考）</h3>
+          </div>
+          <div className="relative pl-6">
+            <div className="absolute left-2 top-1 bottom-1 w-px bg-border" />
+            {[
+              { month: '3月', title: '政策发布', desc: '高新区教育体育局发布当年义务教育入学工作实施细则' },
+              { month: '4月', title: '信息采集', desc: '适龄儿童少年法定监护人登录"成都市义务教育招生入学服务平台"完成信息采集' },
+              { month: '5月', title: '资料审核', desc: '公办学校现场资料审核；民办学校网上报名' },
+              { month: '6月', title: '划片公布', desc: '公布公办学校划片范围；民办学校电脑随机录取' },
+              { month: '7月', title: '录取确认', desc: '公办学校录取结果公布；家长确认学位' },
+              { month: '8月', title: '报到注册', desc: '新生报到注册，准备入学' },
+            ].map((item, i) => (
+              <div key={i} className="relative mb-4 last:mb-0">
+                <div className="absolute -left-[18px] top-1 size-3 rounded-full border-2 border-primary bg-card" />
+                <p className="text-sm font-semibold">{item.month} · {item.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">以上为往年常规时间节点参考，具体以当年教育部门公告为准。</p>
+        </section>
+
+        {/* 学区划片查询 */}
+        <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <MapPin className="size-5 text-primary" />
+            <h3 className="font-bold">学区划片查询（按街道）</h3>
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">选择街道查看该区域内的学校。小区级精确划片数据正在建设中，建议以教育部门当年公告为准。</p>
+          <div className="flex flex-wrap gap-2">
+            {streets.map((street) => (
+              <button
+                key={street.subdistrict}
+                type="button"
+                onClick={() => setSubdistrict(subdistrict === street.subdistrict ? '全部' : street.subdistrict)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subdistrict === street.subdistrict ? 'bg-primary text-primary-foreground' : 'border border-border bg-background hover:bg-muted'}`}
+              >
+                {street.subdistrict}（{street.count}所）
+              </button>
+            ))}
+          </div>
+          {subdistrict !== '全部' && (
+            <div className="mt-4 rounded-xl bg-muted/50 p-3">
+              <p className="mb-2 text-xs font-semibold">{subdistrict} 范围内学校：</p>
+              <div className="flex flex-wrap gap-1.5">
+                {filtered.filter((s) => s.area.includes(subdistrict)).map((s) => (
+                  <span key={s.id} className="rounded-md bg-background px-2 py-1 text-xs">{s.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         <section className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
