@@ -453,18 +453,32 @@ export default function Home({ map: injectedMap }: { map?: ComponentType<SchoolM
               </button>
             </div>
           )}
-          <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto_auto]">
-            <label htmlFor="school-search" className="relative block">
+          <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto_auto_auto]">
+            <div className="relative block">
               <span className="sr-only">搜索学校、地址或片区</span>
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="school-search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                className="h-10 rounded-xl border-0 bg-muted pl-9 shadow-none focus-visible:ring-primary/25"
-                placeholder="搜索学校、地址或片区"
+                onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
+                className="h-10 rounded-xl border-0 bg-muted pl-9 pr-10 shadow-none focus-visible:ring-primary/25"
+                placeholder="搜索学校、地址或片区，如：益州小学"
               />
-            </label>
+              {query && (
+                <button
+                  type="button"
+                  aria-label="清除搜索"
+                  onClick={() => setQuery('')}
+                  className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
+                >
+                  <ChevronDown className="size-3 rotate-45" />
+                </button>
+              )}
+            </div>
+            <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={() => { /* 搜索即时生效，按钮用于确认/聚焦 */ document.getElementById('school-search')?.focus(); }}>
+              <Search className="size-4" /> 搜索
+            </Button>
             <SegmentedFilter label="学段" value={stage} values={['全部', '小学', '初中']} onChange={(value) => setStage(value as typeof stage)} />
             <SegmentedFilter label="性质" value={nature} values={['全部', '公办', '民办']} onChange={(value) => setNature(value as typeof nature)} />
             <SegmentedFilter label="区域" value={zone} values={['全部', '高新南区', '高新西区']} onChange={(value) => setZone(value as typeof zone)} />
